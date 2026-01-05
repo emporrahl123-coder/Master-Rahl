@@ -3,67 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LORD RAHL AI - From Scratch</title>
+    <title>CodeChat - Single Page</title>
     <style>
         /* RESET */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
             background: #0f0f23;
             color: #e0e0e0;
-        }
-
-        /* HEADER */
-        header {
-            background: #1a1a2e;
-            padding: 1rem;
-            border-bottom: 1px solid #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            color: #00ffcc;
-        }
-
-        .mode-indicator {
-            background: #2d2d5a;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-
-        .mode-indicator.coding {
-            background: #006633;
-            color: #00ff88;
+            overflow: hidden;
         }
 
         /* MAIN CONTAINER */
         .container {
             display: flex;
-            flex: 1;
-            overflow: hidden;
+            height: 100vh;
+            transition: all 0.3s ease;
         }
 
-        /* CHAT PANEL */
+        /* CHAT PANEL - Always visible */
         .chat-panel {
-            width: 40%;
+            height: 100vh;
+            background: #161625;
             display: flex;
             flex-direction: column;
             border-right: 1px solid #333;
-            background: #161625;
         }
 
+        /* When coding mode is OFF: chat takes full width */
+        .container:not(.coding-mode) .chat-panel {
+            width: 100%;
+        }
+
+        /* When coding mode is ON: chat takes left half */
+        .container.coding-mode .chat-panel {
+            width: 50%;
+        }
+
+        /* CODE PANEL - Hidden until coding mode */
+        .code-panel {
+            width: 50%;
+            height: 100vh;
+            background: #0d0d1a;
+            display: none;
+            flex-direction: column;
+        }
+
+        .container.coding-mode .code-panel {
+            display: flex;
+        }
+
+        /* CHAT MESSAGES */
         .messages {
             flex: 1;
             overflow-y: auto;
@@ -74,28 +66,28 @@
             margin-bottom: 1rem;
             padding: 0.8rem;
             border-radius: 10px;
-            max-width: 85%;
-            word-wrap: break-word;
+            max-width: 90%;
         }
 
         .user {
             background: #2a2a4a;
             margin-left: auto;
-            border-bottom-right-radius: 3px;
+            margin-right: 0;
         }
 
         .ai {
             background: #1e3a5f;
             margin-right: auto;
-            border-bottom-left-radius: 3px;
+            margin-left: 0;
         }
 
         .system {
-            background: #5a2a00;
+            background: #333355;
             margin: 0.5rem auto;
             text-align: center;
             font-style: italic;
             font-size: 0.9rem;
+            max-width: 80%;
         }
 
         /* INPUT AREA */
@@ -126,77 +118,34 @@
             font-weight: bold;
         }
 
-        #sendBtn:hover {
-            background: #006699;
-        }
-
-        /* CODE PANEL */
-        .code-panel {
-            width: 60%;
-            display: none;
-            flex-direction: column;
-            background: #0d0d1a;
-        }
-
-        .code-header {
-            padding: 1rem;
-            border-bottom: 1px solid #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .code-header h2 {
-            color: #00ccff;
-            font-size: 1.2rem;
-        }
-
-        #exitCodingBtn {
-            background: #990000;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .code-editors {
-            display: flex;
-            flex: 1;
-            padding: 1rem;
-            gap: 1rem;
-            overflow-y: auto;
-        }
-
+        /* CODE EDITOR */
         .editor-container {
             flex: 1;
             display: flex;
             flex-direction: column;
+            padding: 1rem;
         }
 
-        .editor-label {
-            background: #222244;
-            padding: 0.5rem;
-            border-radius: 5px 5px 0 0;
-            font-family: monospace;
-            font-weight: bold;
-            color: #aaddff;
+        .code-header {
+            color: #00ccff;
+            padding: 0.5rem 0;
+            font-size: 1.2rem;
         }
 
-        .code-editor {
+        #codeEditor {
             flex: 1;
             background: #111133;
             color: #88ff88;
             border: 1px solid #444;
-            border-top: none;
-            padding: 0.8rem;
+            padding: 1rem;
             font-family: 'Courier New', monospace;
             font-size: 14px;
+            border-radius: 5px;
             resize: none;
-            border-radius: 0 0 5px 5px;
         }
 
-        .preview-pane {
+        /* LIVE PREVIEW */
+        .preview-container {
             height: 40%;
             border-top: 2px solid #333;
             padding: 1rem;
@@ -204,9 +153,9 @@
             flex-direction: column;
         }
 
-        .preview-pane h3 {
+        .preview-header {
             color: #ffaa00;
-            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
         }
 
         #previewFrame {
@@ -216,31 +165,28 @@
             border-radius: 5px;
         }
 
-        /* RESPONSIVE */
-        @media (max-width: 900px) {
-            .container {
-                flex-direction: column;
-            }
-            
-            .chat-panel, .code-panel {
-                width: 100%;
-                height: 50%;
-            }
+        /* SCROLLBAR */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #0088cc;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>⚡ CodeChat AI</h1>
-        <div id="modeIndicator" class="mode-indicator">💬 Chat Mode</div>
-    </header>
-
-    <div class="container">
+    <div class="container" id="mainContainer">
         <!-- LEFT: CHAT -->
         <div class="chat-panel">
-            <div id="messages" class="messages">
+            <div class="messages" id="messages">
                 <div class="message ai">
-                    <strong>AI:</strong> Hello! I'm RAHL,your coding assistant. Say something like "create me a website" to start building.
+                    <strong>AI:</strong> I'm RAHL your coding assistant. Say something like "create a login page" to start building.
                 </div>
             </div>
             
@@ -248,37 +194,26 @@
                 <input 
                     type="text" 
                     id="userInput" 
-                    placeholder="Type your message here..."
+                    placeholder="Chat or describe what to build..."
                     autocomplete="off"
                 >
                 <button id="sendBtn">Send</button>
             </div>
         </div>
 
-        <!-- RIGHT: CODE EDITOR & PREVIEW -->
-        <div id="codePanel" class="code-panel">
-            <div class="code-header">
-                <h2>🔨 Building: <span id="projectTitle">Project</span></h2>
-                <button id="exitCodingBtn">Exit Coding Mode</button>
+        <!-- RIGHT: CODE & PREVIEW (hidden initially) -->
+        <div class="code-panel">
+            <div class="editor-container">
+                <div class="code-header">📝 Code Editor</div>
+                <textarea 
+                    id="codeEditor" 
+                    spellcheck="false"
+                    placeholder="Code will appear here automatically..."
+                ></textarea>
             </div>
             
-            <div class="code-editors">
-                <div class="editor-container">
-                    <div class="editor-label">HTML</div>
-                    <textarea id="htmlEditor" class="code-editor" spellcheck="false"></textarea>
-                </div>
-                <div class="editor-container">
-                    <div class="editor-label">CSS</div>
-                    <textarea id="cssEditor" class="code-editor" spellcheck="false"></textarea>
-                </div>
-                <div class="editor-container">
-                    <div class="editor-label">JavaScript</div>
-                    <textarea id="jsEditor" class="code-editor" spellcheck="false"></textarea>
-                </div>
-            </div>
-
-            <div class="preview-pane">
-                <h3>👁️ Live Preview</h3>
+            <div class="preview-container">
+                <div class="preview-header">👁️ Live Preview</div>
                 <iframe id="previewFrame"></iframe>
             </div>
         </div>
@@ -287,96 +222,65 @@
     <script>
         // ========== STATE ==========
         let isCodingMode = false;
-        let currentProject = "";
-        const code = {
-            html: '',
-            css: '',
-            js: ''
-        };
+        let currentCode = `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Your Project</h1>
+    <p>Start building here.</p>
+</body>
+</html>`;
 
         // ========== DOM ELEMENTS ==========
+        const mainContainer = document.getElementById('mainContainer');
         const messagesDiv = document.getElementById('messages');
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
-        const codePanel = document.getElementById('codePanel');
-        const modeIndicator = document.getElementById('modeIndicator');
-        const projectTitle = document.getElementById('projectTitle');
-        const exitCodingBtn = document.getElementById('exitCodingBtn');
-        const htmlEditor = document.getElementById('htmlEditor');
-        const cssEditor = document.getElementById('cssEditor');
-        const jsEditor = document.getElementById('jsEditor');
+        const codeEditor = document.getElementById('codeEditor');
         const previewFrame = document.getElementById('previewFrame');
 
         // ========== INTENT DETECTION ==========
         function detectCodingIntent(text) {
             const triggers = [
-                'create me a',
-                'build me a',
-                'make me a',
-                'code a',
-                'develop a',
-                'i want you to create',
+                'create',
+                'build',
+                'make',
+                'code',
+                'develop',
+                'generate',
+                'write code',
+                'i want a',
                 'i need a',
-                'generate a',
-                'write code for',
-                'i want a'
+                'design a'
             ];
             const lower = text.toLowerCase();
             return triggers.some(trigger => lower.includes(trigger));
         }
 
-        // ========== MODE SWITCHING ==========
-        function enterCodingMode(description) {
+        // ========== MODE MANAGEMENT ==========
+        function enterCodingMode() {
             isCodingMode = true;
-            currentProject = description;
-            
-            // Update UI
-            modeIndicator.textContent = "⚡ Coding Mode";
-            modeIndicator.classList.add('coding');
-            codePanel.style.display = 'flex';
-            projectTitle.textContent = description;
-            
-            // Set initial code
-            code.html = `<!DOCTYPE html>
-<html>
-<head>
-    <title>${description}</title>
-    <style>
-        /* CSS will go here */
-    </style>
-</head>
-<body>
-    <h1>${description}</h1>
-    <p>Start building your project!</p>
-</body>
-</html>`;
-            
-            code.css = `body {
-    font-family: Arial, sans-serif;
-    margin: 40px;
-    background: #f0f0f0;
-}`;
-            
-            code.js = `console.log("Hello from your project!");
-// JavaScript will run here`;
-            
-            updateEditors();
+            mainContainer.classList.add('coding-mode');
+            codeEditor.value = currentCode;
             updatePreview();
-            
-            // Add system message
-            addMessage('system', `Entered coding mode. Building: "${description}"`);
+            addMessage('system', 'Entered coding mode. You can describe changes and see live preview.');
         }
 
         function exitCodingMode() {
             isCodingMode = false;
-            currentProject = "";
-            
-            // Update UI
-            modeIndicator.textContent = "💬 Chat Mode";
-            modeIndicator.classList.remove('coding');
-            codePanel.style.display = 'none';
-            
-            addMessage('system', 'Exited coding mode. Back to normal chat.');
+            mainContainer.classList.remove('coding-mode');
+            addMessage('system', 'Returned to chat mode.');
         }
 
         // ========== MESSAGE HANDLING ==========
@@ -388,44 +292,57 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        function simulateAIResponse(userMessage) {
-            if (isCodingMode) {
-                // In coding mode, AI "updates" the code
-                const lower = userMessage.toLowerCase();
-                
-                if (lower.includes('button')) {
-                    code.html = code.html.replace('</body>', 
-                        '<button id="myButton">Click Me</button>\n</body>');
-                    code.css += '\nbutton { padding: 10px 20px; background: blue; color: white; }';
-                    code.js += '\ndocument.getElementById("myButton").onclick = () => alert("Hello!");';
-                    updateEditors();
-                    updatePreview();
-                    return "Added a button with styling and click handler!";
-                }
-                
-                if (lower.includes('blue') || lower.includes('color')) {
-                    code.css = code.css.replace('background: #f0f0f0;', 'background: lightblue;');
-                    updateEditors();
-                    updatePreview();
-                    return "Changed background to light blue!";
-                }
-                
-                return "I've updated the code based on your request. Check the preview!";
-            } else {
-                // Normal chat mode
-                if (detectCodingIntent(userMessage)) {
-                    enterCodingMode(userMessage);
-                    return "I'll help you build that! I've entered coding mode. You can now describe changes.";
-                }
-                
-                const responses = [
-                    "I'm here to help you build projects! Try saying 'create me a website'.",
-                    "You can ask me to create websites, apps, or games.",
-                    "Need help with code? Just ask!",
-                    "Tell me what you want to build."
-                ];
-                return responses[Math.floor(Math.random() * responses.length)];
+        function handleAIResponse(userMessage) {
+            const lowerMsg = userMessage.toLowerCase();
+            
+            // Check if should enter coding mode
+            if (!isCodingMode && detectCodingIntent(userMessage)) {
+                enterCodingMode();
+                return "I'll help you build that! Describe what you want (e.g., 'add a blue button').";
             }
+            
+            // If in coding mode, update code based on request
+            if (isCodingMode) {
+                let updated = false;
+                
+                if (lowerMsg.includes('button')) {
+                    currentCode = currentCode.replace('</body>', 
+                        '\n<button style="padding:10px 20px;background:blue;color:white;border:none;border-radius:5px;">Click Me</button>\n</body>');
+                    updated = true;
+                }
+                
+                if (lowerMsg.includes('blue') && !lowerMsg.includes('button')) {
+                    currentCode = currentCode.replace('background: #f5f5f5;', 'background: lightblue;');
+                    updated = true;
+                }
+                
+                if (lowerMsg.includes('red')) {
+                    currentCode = currentCode.replace('color: #333;', 'color: red;');
+                    updated = true;
+                }
+                
+                if (lowerMsg.includes('center')) {
+                    currentCode = currentCode.replace('padding: 40px;', 'padding: 40px; text-align: center;');
+                    updated = true;
+                }
+                
+                if (updated) {
+                    codeEditor.value = currentCode;
+                    updatePreview();
+                    return "Updated the code based on your request!";
+                }
+                
+                return "I'm in coding mode. Describe changes or say 'exit coding' to return to chat.";
+            }
+            
+            // Normal chat responses
+            const responses = [
+                "How can I help you today?",
+                "Want to build something? Try saying 'create a website'.",
+                "I can help you code projects. Just ask!",
+                "Try describing what you want to build."
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
         }
 
         function handleUserInput() {
@@ -438,34 +355,23 @@
             // Clear input
             userInput.value = '';
             
+            // Check for exit command
+            if (isCodingMode && (text.toLowerCase().includes('exit coding') || 
+                                 text.toLowerCase().includes('back to chat'))) {
+                exitCodingMode();
+                return;
+            }
+            
             // Simulate AI thinking
             setTimeout(() => {
-                const response = simulateAIResponse(text);
+                const response = handleAIResponse(text);
                 addMessage('ai', response);
             }, 300);
         }
 
-        // ========== CODE & PREVIEW ==========
-        function updateEditors() {
-            htmlEditor.value = code.html;
-            cssEditor.value = code.css;
-            jsEditor.value = code.js;
-        }
-
+        // ========== PREVIEW ==========
         function updatePreview() {
-            const previewHTML = `
-                <!DOCTYPE html>
-                <html>
-                    <head>
-                        <style>${code.css}</style>
-                    </head>
-                    <body>
-                        ${code.html}
-                        <script>${code.js}<\/script>
-                    </body>
-                </html>
-            `;
-            previewFrame.srcdoc = previewHTML;
+            previewFrame.srcdoc = currentCode;
         }
 
         // ========== EVENT LISTENERS ==========
@@ -474,19 +380,13 @@
             if (e.key === 'Enter') handleUserInput();
         });
 
-        exitCodingBtn.addEventListener('click', exitCodingMode);
-
-        // Code editors live update
-        [htmlEditor, cssEditor, jsEditor].forEach((editor, index) => {
-            editor.addEventListener('input', (e) => {
-                const type = ['html', 'css', 'js'][index];
-                code[type] = e.target.value;
-                updatePreview();
-            });
+        // Live code editing
+        codeEditor.addEventListener('input', (e) => {
+            currentCode = e.target.value;
+            updatePreview();
         });
 
-        // Initialize
-        updateEditors();
+        // Initial preview
         updatePreview();
     </script>
 </body>
