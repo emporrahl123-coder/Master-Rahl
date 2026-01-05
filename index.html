@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LORD RAHL AI - From Scratch</title>
+    <style>
+        /* RESET */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #0f0f23;
+            color: #e0e0e0;
+        }
+
+        /* HEADER */
+        header {
+            background: #1a1a2e;
+            padding: 1rem;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #00ffcc;
+        }
+
+        .mode-indicator {
+            background: #2d2d5a;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .mode-indicator.coding {
+            background: #006633;
+            color: #00ff88;
+        }
+
+        /* MAIN CONTAINER */
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* CHAT PANEL */
+        .chat-panel {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #333;
+            background: #161625;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            border-radius: 10px;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+
+        .user {
+            background: #2a2a4a;
+            margin-left: auto;
+            border-bottom-right-radius: 3px;
+        }
+
+        .ai {
+            background: #1e3a5f;
+            margin-right: auto;
+            border-bottom-left-radius: 3px;
+        }
+
+        .system {
+            background: #5a2a00;
+            margin: 0.5rem auto;
+            text-align: center;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        /* INPUT AREA */
+        .input-area {
+            padding: 1rem;
+            border-top: 1px solid #333;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid #444;
+            border-radius: 8px;
+            background: #1a1a2e;
+            color: white;
+            font-size: 1rem;
+        }
+
+        #sendBtn {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 0 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #sendBtn:hover {
+            background: #006699;
+        }
+
+        /* CODE PANEL */
+        .code-panel {
+            width: 60%;
+            display: none;
+            flex-direction: column;
+            background: #0d0d1a;
+        }
+
+        .code-header {
+            padding: 1rem;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-header h2 {
+            color: #00ccff;
+            font-size: 1.2rem;
+        }
+
+        #exitCodingBtn {
+            background: #990000;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .code-editors {
+            display: flex;
+            flex: 1;
+            padding: 1rem;
+            gap: 1rem;
+            overflow-y: auto;
+        }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-label {
+            background: #222244;
+            padding: 0.5rem;
+            border-radius: 5px 5px 0 0;
+            font-family: monospace;
+            font-weight: bold;
+            color: #aaddff;
+        }
+
+        .code-editor {
+            flex: 1;
+            background: #111133;
+            color: #88ff88;
+            border: 1px solid #444;
+            border-top: none;
+            padding: 0.8rem;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            border-radius: 0 0 5px 5px;
+        }
+
+        .preview-pane {
+            height: 40%;
+            border-top: 2px solid #333;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-pane h3 {
+            color: #ffaa00;
+            margin-bottom: 0.5rem;
+        }
+
+        #previewFrame {
+            flex: 1;
+            background: white;
+            border: 1px solid #555;
+            border-radius: 5px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .chat-panel, .code-panel {
+                width: 100%;
+                height: 50%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>⚡ CodeChat AI</h1>
+        <div id="modeIndicator" class="mode-indicator">💬 Chat Mode</div>
+    </header>
+
+    <div class="container">
+        <!-- LEFT: CHAT -->
+        <div class="chat-panel">
+            <div id="messages" class="messages">
+                <div class="message ai">
+                    <strong>AI:</strong> Hello! I'm RAHL,your coding assistant. Say something like "create me a website" to start building.
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Type your message here..."
+                    autocomplete="off"
+                >
+                <button id="sendBtn">Send</button>
+            </div>
+        </div>
+
+        <!-- RIGHT: CODE EDITOR & PREVIEW -->
+        <div id="codePanel" class="code-panel">
+            <div class="code-header">
+                <h2>🔨 Building: <span id="projectTitle">Project</span></h2>
+                <button id="exitCodingBtn">Exit Coding Mode</button>
+            </div>
+            
+            <div class="code-editors">
+                <div class="editor-container">
+                    <div class="editor-label">HTML</div>
+                    <textarea id="htmlEditor" class="code-editor" spellcheck="false"></textarea>
+                </div>
+                <div class="editor-container">
+                    <div class="editor-label">CSS</div>
+                    <textarea id="cssEditor" class="code-editor" spellcheck="false"></textarea>
+                </div>
+                <div class="editor-container">
+                    <div class="editor-label">JavaScript</div>
+                    <textarea id="jsEditor" class="code-editor" spellcheck="false"></textarea>
+                </div>
+            </div>
+
+            <div class="preview-pane">
+                <h3>👁️ Live Preview</h3>
+                <iframe id="previewFrame"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== STATE ==========
+        let isCodingMode = false;
+        let currentProject = "";
+        const code = {
+            html: '',
+            css: '',
+            js: ''
+        };
+
+        // ========== DOM ELEMENTS ==========
+        const messagesDiv = document.getElementById('messages');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const codePanel = document.getElementById('codePanel');
+        const modeIndicator = document.getElementById('modeIndicator');
+        const projectTitle = document.getElementById('projectTitle');
+        const exitCodingBtn = document.getElementById('exitCodingBtn');
+        const htmlEditor = document.getElementById('htmlEditor');
+        const cssEditor = document.getElementById('cssEditor');
+        const jsEditor = document.getElementById('jsEditor');
+        const previewFrame = document.getElementById('previewFrame');
+
+        // ========== INTENT DETECTION ==========
+        function detectCodingIntent(text) {
+            const triggers = [
+                'create me a',
+                'build me a',
+                'make me a',
+                'code a',
+                'develop a',
+                'i want you to create',
+                'i need a',
+                'generate a',
+                'write code for',
+                'i want a'
+            ];
+            const lower = text.toLowerCase();
+            return triggers.some(trigger => lower.includes(trigger));
+        }
+
+        // ========== MODE SWITCHING ==========
+        function enterCodingMode(description) {
+            isCodingMode = true;
+            currentProject = description;
+            
+            // Update UI
+            modeIndicator.textContent = "⚡ Coding Mode";
+            modeIndicator.classList.add('coding');
+            codePanel.style.display = 'flex';
+            projectTitle.textContent = description;
+            
+            // Set initial code
+            code.html = `<!DOCTYPE html>
+<html>
+<head>
+    <title>${description}</title>
+    <style>
+        /* CSS will go here */
+    </style>
+</head>
+<body>
+    <h1>${description}</h1>
+    <p>Start building your project!</p>
+</body>
+</html>`;
+            
+            code.css = `body {
+    font-family: Arial, sans-serif;
+    margin: 40px;
+    background: #f0f0f0;
+}`;
+            
+            code.js = `console.log("Hello from your project!");
+// JavaScript will run here`;
+            
+            updateEditors();
+            updatePreview();
+            
+            // Add system message
+            addMessage('system', `Entered coding mode. Building: "${description}"`);
+        }
+
+        function exitCodingMode() {
+            isCodingMode = false;
+            currentProject = "";
+            
+            // Update UI
+            modeIndicator.textContent = "💬 Chat Mode";
+            modeIndicator.classList.remove('coding');
+            codePanel.style.display = 'none';
+            
+            addMessage('system', 'Exited coding mode. Back to normal chat.');
+        }
+
+        // ========== MESSAGE HANDLING ==========
+        function addMessage(sender, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.innerHTML = `<strong>${sender.toUpperCase()}:</strong> ${text}`;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function simulateAIResponse(userMessage) {
+            if (isCodingMode) {
+                // In coding mode, AI "updates" the code
+                const lower = userMessage.toLowerCase();
+                
+                if (lower.includes('button')) {
+                    code.html = code.html.replace('</body>', 
+                        '<button id="myButton">Click Me</button>\n</body>');
+                    code.css += '\nbutton { padding: 10px 20px; background: blue; color: white; }';
+                    code.js += '\ndocument.getElementById("myButton").onclick = () => alert("Hello!");';
+                    updateEditors();
+                    updatePreview();
+                    return "Added a button with styling and click handler!";
+                }
+                
+                if (lower.includes('blue') || lower.includes('color')) {
+                    code.css = code.css.replace('background: #f0f0f0;', 'background: lightblue;');
+                    updateEditors();
+                    updatePreview();
+                    return "Changed background to light blue!";
+                }
+                
+                return "I've updated the code based on your request. Check the preview!";
+            } else {
+                // Normal chat mode
+                if (detectCodingIntent(userMessage)) {
+                    enterCodingMode(userMessage);
+                    return "I'll help you build that! I've entered coding mode. You can now describe changes.";
+                }
+                
+                const responses = [
+                    "I'm here to help you build projects! Try saying 'create me a website'.",
+                    "You can ask me to create websites, apps, or games.",
+                    "Need help with code? Just ask!",
+                    "Tell me what you want to build."
+                ];
+                return responses[Math.floor(Math.random() * responses.length)];
+            }
+        }
+
+        function handleUserInput() {
+            const text = userInput.value.trim();
+            if (!text) return;
+            
+            // Add user message
+            addMessage('user', text);
+            
+            // Clear input
+            userInput.value = '';
+            
+            // Simulate AI thinking
+            setTimeout(() => {
+                const response = simulateAIResponse(text);
+                addMessage('ai', response);
+            }, 300);
+        }
+
+        // ========== CODE & PREVIEW ==========
+        function updateEditors() {
+            htmlEditor.value = code.html;
+            cssEditor.value = code.css;
+            jsEditor.value = code.js;
+        }
+
+        function updatePreview() {
+            const previewHTML = `
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <style>${code.css}</style>
+                    </head>
+                    <body>
+                        ${code.html}
+                        <script>${code.js}<\/script>
+                    </body>
+                </html>
+            `;
+            previewFrame.srcdoc = previewHTML;
+        }
+
+        // ========== EVENT LISTENERS ==========
+        sendBtn.addEventListener('click', handleUserInput);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleUserInput();
+        });
+
+        exitCodingBtn.addEventListener('click', exitCodingMode);
+
+        // Code editors live update
+        [htmlEditor, cssEditor, jsEditor].forEach((editor, index) => {
+            editor.addEventListener('input', (e) => {
+                const type = ['html', 'css', 'js'][index];
+                code[type] = e.target.value;
+                updatePreview();
+            });
+        });
+
+        // Initialize
+        updateEditors();
+        updatePreview();
+    </script>
+</body>
+</html>
