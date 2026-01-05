@@ -3,391 +3,1397 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeChat - Single Page</title>
+    <title>Rahl AI - Full-Stack Coding Assistant</title>
     <style>
-        /* RESET */
+        /* RESET & BASE */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #7c3aed;
+            --dark: #0f172a;
+            --darker: #020617;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --code-bg: #1e293b;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             height: 100vh;
-            background: #0f0f23;
-            color: #e0e0e0;
+            background: var(--darker);
+            color: var(--light);
             overflow: hidden;
         }
 
-        /* MAIN CONTAINER */
+        /* MAIN LAYOUT */
         .container {
             display: flex;
             height: 100vh;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* CHAT PANEL - Always visible */
+        /* CHAT PANEL */
         .chat-panel {
             height: 100vh;
-            background: #161625;
+            background: var(--dark);
             display: flex;
             flex-direction: column;
-            border-right: 1px solid #333;
+            border-right: 1px solid #334155;
+            min-width: 300px;
         }
 
-        /* When coding mode is OFF: chat takes full width */
         .container:not(.coding-mode) .chat-panel {
             width: 100%;
         }
 
-        /* When coding mode is ON: chat takes left half */
         .container.coding-mode .chat-panel {
-            width: 50%;
+            width: 40%;
         }
 
-        /* CODE PANEL - Hidden until coding mode */
+        /* CHAT HEADER */
+        .chat-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #334155;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-header h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .chat-header .tagline {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        /* MESSAGES */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: linear-gradient(180deg, rgba(15,23,42,0.8) 0%, rgba(2,6,23,0.6) 100%);
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            padding: 1rem 1.2rem;
+            border-radius: 12px;
+            max-width: 90%;
+            animation: messageAppear 0.3s ease;
+            line-height: 1.6;
+        }
+
+        @keyframes messageAppear {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user {
+            background: linear-gradient(135deg, var(--primary), #3b82f6);
+            margin-left: auto;
+            margin-right: 0;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .ai {
+            background: rgba(30, 41, 59, 0.8);
+            margin-right: auto;
+            margin-left: 0;
+            border-bottom-left-radius: 4px;
+            border-left: 4px solid var(--secondary);
+            backdrop-filter: blur(10px);
+        }
+
+        .ai strong {
+            color: #a78bfa;
+        }
+
+        .system {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            margin: 1rem auto;
+            text-align: center;
+            font-style: italic;
+            font-size: 0.9rem;
+            max-width: 80%;
+            color: #fbbf24;
+        }
+
+        .message strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* INPUT AREA */
+        .input-area {
+            padding: 1.5rem;
+            border-top: 1px solid #334155;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .input-container {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 1rem 1.2rem;
+            border: 2px solid #334155;
+            border-radius: 10px;
+            background: rgba(30, 41, 59, 0.8);
+            color: white;
+            font-size: 1rem;
+            resize: none;
+            min-height: 56px;
+            max-height: 120px;
+            line-height: 1.5;
+            transition: all 0.2s;
+        }
+
+        #userInput:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+
+        #userInput::placeholder {
+            color: #64748b;
+        }
+
+        #sendBtn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.9rem 1.8rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #sendBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+
+        #sendBtn:active {
+            transform: translateY(0);
+        }
+
+        #sendBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* CODING PANEL */
         .code-panel {
-            width: 50%;
+            width: 60%;
             height: 100vh;
-            background: #0d0d1a;
+            background: var(--darker);
             display: none;
             flex-direction: column;
+            border-left: 1px solid #1e293b;
         }
 
         .container.coding-mode .code-panel {
             display: flex;
         }
 
-        /* CHAT MESSAGES */
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem;
-        }
-
-        .message {
-            margin-bottom: 1rem;
-            padding: 0.8rem;
-            border-radius: 10px;
-            max-width: 90%;
-        }
-
-        .user {
-            background: #2a2a4a;
-            margin-left: auto;
-            margin-right: 0;
-        }
-
-        .ai {
-            background: #1e3a5f;
-            margin-right: auto;
-            margin-left: 0;
-        }
-
-        .system {
-            background: #333355;
-            margin: 0.5rem auto;
-            text-align: center;
-            font-style: italic;
-            font-size: 0.9rem;
-            max-width: 80%;
-        }
-
-        /* INPUT AREA */
-        .input-area {
-            padding: 1rem;
-            border-top: 1px solid #333;
+        /* PROJECT HEADER */
+        .project-header {
+            padding: 1rem 1.5rem;
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid #334155;
             display: flex;
-            gap: 0.5rem;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
         }
 
-        #userInput {
-            flex: 1;
-            padding: 0.8rem;
-            border: 1px solid #444;
+        .project-info h2 {
+            font-size: 1.3rem;
+            color: var(--light);
+            margin-bottom: 0.25rem;
+        }
+
+        .project-info .project-desc {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        /* GITHUB CONTROLS */
+        .github-controls {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .github-btn {
+            padding: 0.6rem 1.2rem;
             border-radius: 8px;
-            background: #1a1a2e;
-            color: white;
-            font-size: 1rem;
-        }
-
-        #sendBtn {
-            background: #0088cc;
-            color: white;
             border: none;
-            padding: 0 1.5rem;
-            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
             cursor: pointer;
-            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
         }
 
-        /* CODE EDITOR */
+        .github-btn.connect {
+            background: #24292e;
+            color: white;
+            border: 1px solid #444d56;
+        }
+
+        .github-btn.commit {
+            background: linear-gradient(135deg, var(--success), #10b981);
+            color: white;
+        }
+
+        .github-btn.push {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .github-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* FILE EXPLORER */
+        .file-explorer {
+            width: 250px;
+            background: rgba(15, 23, 42, 0.8);
+            border-right: 1px solid #334155;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+
+        .file-explorer h3 {
+            padding: 0 1rem 1rem;
+            color: var(--light);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+        }
+
+        .file-tree {
+            list-style: none;
+        }
+
+        .file-item {
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            color: #cbd5e1;
+            font-size: 0.95rem;
+        }
+
+        .file-item:hover {
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .file-item.active {
+            background: rgba(37, 99, 235, 0.2);
+            color: white;
+            border-right: 3px solid var(--primary);
+        }
+
+        .file-item::before {
+            content: '📄';
+            position: absolute;
+            left: 1rem;
+        }
+
+        .file-item.folder::before {
+            content: '📁';
+        }
+
+        .file-item.server::before {
+            content: '🖥️';
+        }
+
+        .file-item.database::before {
+            content: '🗄️';
+        }
+
+        /* CODE EDITOR AREA */
+        .editor-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
         .editor-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 1rem;
+            background: var(--code-bg);
         }
 
-        .code-header {
-            color: #00ccff;
-            padding: 0.5rem 0;
-            font-size: 1.2rem;
+        .editor-tabs {
+            display: flex;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            overflow-x: auto;
+        }
+
+        .editor-tab {
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            cursor: pointer;
+            white-space: nowrap;
+            border-right: 1px solid #334155;
+            transition: all 0.2s;
+        }
+
+        .editor-tab:hover {
+            background: rgba(37, 99, 235, 0.1);
+            color: white;
+        }
+
+        .editor-tab.active {
+            background: var(--primary);
+            color: white;
         }
 
         #codeEditor {
             flex: 1;
-            background: #111133;
-            color: #88ff88;
-            border: 1px solid #444;
-            padding: 1rem;
-            font-family: 'Courier New', monospace;
+            background: var(--code-bg);
+            color: #e2e8f0;
+            padding: 1.5rem;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
             font-size: 14px;
-            border-radius: 5px;
+            line-height: 1.6;
+            border: none;
             resize: none;
+            outline: none;
+            tab-size: 2;
         }
 
-        /* LIVE PREVIEW */
-        .preview-container {
-            height: 40%;
-            border-top: 2px solid #333;
-            padding: 1rem;
+        /* LANGUAGE SELECTOR */
+        .language-selector {
+            padding: 0.75rem 1.5rem;
+            background: #1e293b;
+            border-top: 1px solid #334155;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .language-selector select {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            background: #0f172a;
+            color: white;
+            border: 1px solid #334155;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* PREVIEW PANEL */
+        .preview-panel {
+            height: 45%;
             display: flex;
             flex-direction: column;
+            background: var(--darker);
+            border-top: 1px solid #334155;
         }
 
         .preview-header {
-            color: #ffaa00;
-            padding-bottom: 0.5rem;
+            padding: 1rem 1.5rem;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-header h3 {
+            color: var(--light);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .preview-btn {
+            padding: 0.5rem 1rem;
+            background: #334155;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .preview-btn:hover {
+            background: #475569;
         }
 
         #previewFrame {
             flex: 1;
             background: white;
-            border: 1px solid #555;
-            border-radius: 5px;
+            border: none;
         }
 
-        /* SCROLLBAR */
+        /* SCROLLBARS */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 10px;
+            height: 10px;
         }
         
         ::-webkit-scrollbar-track {
-            background: #1a1a2e;
+            background: rgba(30, 41, 59, 0.3);
         }
         
         ::-webkit-scrollbar-thumb {
-            background: #0088cc;
-            border-radius: 4px;
+            background: #475569;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* TYPING INDICATOR */
+        .typing-indicator {
+            padding: 1rem 1.2rem;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            margin-right: auto;
+            margin-bottom: 1.5rem;
+            width: fit-content;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: var(--secondary);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1200px) {
+            .container.coding-mode .chat-panel { width: 45%; }
+            .code-panel { width: 55%; }
+        }
+
+        @media (max-width: 900px) {
+            .container { flex-direction: column; }
+            .chat-panel, .code-panel { width: 100% !important; height: 50%; }
+            .file-explorer { width: 200px; }
         }
     </style>
+    <!-- Monaco Editor Loader -->
+    <script src="https://unpkg.com/monaco-editor@0.34.0/min/vs/loader.js"></script>
 </head>
 <body>
     <div class="container" id="mainContainer">
-        <!-- LEFT: CHAT -->
+        <!-- LEFT: CHAT PANEL -->
         <div class="chat-panel">
+            <div class="chat-header">
+                <h1>🤖 Rahl AI</h1>
+                <div class="tagline">Full-Stack Coding Assistant with GitHub Integration</div>
+            </div>
+            
             <div class="messages" id="messages">
                 <div class="message ai">
-                    <strong>AI:</strong> I'm RAHL your coding assistant. Say something like "create a login page" to start building.
+                    <strong>RAHL AI</strong>
+                    I'm Rahl AI, your full-stack development assistant. I can build complete projects with frontend, backend, and database. Just describe what you want to create!
                 </div>
             </div>
             
             <div class="input-area">
-                <input 
-                    type="text" 
-                    id="userInput" 
-                    placeholder="Chat or describe what to build..."
-                    autocomplete="off"
-                >
-                <button id="sendBtn">Send</button>
+                <div class="input-container">
+                    <textarea 
+                        id="userInput" 
+                        placeholder="Describe your project (e.g., 'Create a full-stack e-commerce website with Node.js backend and PostgreSQL database')..."
+                        rows="1"
+                        autocomplete="off"
+                    ></textarea>
+                    <button id="sendBtn">
+                        <span>Send</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- RIGHT: CODE & PREVIEW (hidden initially) -->
+        <!-- RIGHT: CODING PANEL -->
         <div class="code-panel">
-            <div class="editor-container">
-                <div class="code-header">📝 Code Editor</div>
-                <textarea 
-                    id="codeEditor" 
-                    spellcheck="false"
-                    placeholder="Code will appear here automatically..."
-                ></textarea>
+            <div class="project-header">
+                <div class="project-info">
+                    <h2 id="projectTitle">Untitled Project</h2>
+                    <div class="project-desc" id="projectDesc">No active project</div>
+                </div>
+                
+                <div class="github-controls">
+                    <button class="github-btn connect" id="githubConnect">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        Connect GitHub
+                    </button>
+                    <button class="github-btn commit" id="githubCommit" disabled>
+                        💾 Commit
+                    </button>
+                    <button class="github-btn push" id="githubPush" disabled>
+                        📤 Push to GitHub
+                    </button>
+                </div>
             </div>
-            
-            <div class="preview-container">
-                <div class="preview-header">👁️ Live Preview</div>
+
+            <div class="editor-area">
+                <!-- FILE EXPLORER -->
+                <div class="file-explorer">
+                    <h3>Project Files</h3>
+                    <ul class="file-tree" id="fileTree">
+                        <!-- Files will be dynamically added -->
+                    </ul>
+                </div>
+
+                <!-- CODE EDITOR -->
+                <div class="editor-container">
+                    <div class="editor-tabs" id="editorTabs">
+                        <!-- Tabs will be dynamically added -->
+                    </div>
+                    <div id="monacoEditor" style="flex: 1;"></div>
+                </div>
+            </div>
+
+            <!-- LANGUAGE & PREVIEW -->
+            <div class="language-selector">
+                <span>Language:</span>
+                <select id="languageSelect">
+                    <option value="html">HTML/CSS/JS</option>
+                    <option value="python">Python</option>
+                    <option value="javascript">Node.js</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="java">Java</option>
+                    <option value="php">PHP</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                    <option value="csharp">C#</option>
+                    <option value="cpp">C++</option>
+                    <option value="sql">SQL</option>
+                    <option value="dockerfile">Docker</option>
+                </select>
+            </div>
+
+            <!-- PREVIEW PANEL -->
+            <div class="preview-panel">
+                <div class="preview-header">
+                    <h3>
+                        <span>👁️ Live Preview</span>
+                        <span id="previewStatus" style="font-size: 0.8rem; color: var(--success);">● Running</span>
+                    </h3>
+                    <div class="preview-actions">
+                        <button class="preview-btn" onclick="refreshPreview()">🔄 Refresh</button>
+                        <button class="preview-btn" onclick="openPreview()">↗️ Open</button>
+                    </div>
+                </div>
                 <iframe id="previewFrame"></iframe>
             </div>
         </div>
     </div>
 
     <script>
+        // ========== CONFIGURATION ==========
+        const RAHL_API = 'https://api.rahl.ai/v1/code'; // Replace with actual API
+        const BACKEND_API = 'http://localhost:3001/api/execute'; // Local execution backend
+        const GITHUB_CLIENT_ID = 'YOUR_GITHUB_CLIENT_ID'; // Replace with actual
+        
         // ========== STATE ==========
         let isCodingMode = false;
-        let currentCode = `<!DOCTYPE html>
-<html>
+        let currentProject = {
+            name: '',
+            description: '',
+            files: {},
+            activeFile: null,
+            githubConnected: false,
+            backendRunning: false
+        };
+        
+        let editor = null;
+        let sessionId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+        
+        // ========== INITIAL FILES STRUCTURE ==========
+        const initialFiles = {
+            'index.html': {
+                name: 'index.html',
+                content: `<!DOCTYPE html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rahl Project</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            padding: 40px;
-            background: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            text-align: center;
         }
         h1 {
-            color: #333;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            opacity: 0.9;
+            margin-bottom: 2rem;
         }
     </style>
 </head>
 <body>
-    <h1>Your Project</h1>
-    <p>Start building here.</p>
+    <div class="container">
+        <h1>🚀 Rahl AI Project</h1>
+        <p>This is a full-stack project generated by Rahl AI. Start building your application!</p>
+        <div id="app"></div>
+    </div>
+    <script>
+        console.log('Rahl AI Project running...');
+    <\/script>
 </body>
-</html>`;
+</html>`,
+                language: 'html'
+            },
+            'server.js': {
+                name: 'server.js',
+                content: `const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
 
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+// Routes
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Rahl AI Backend Running' });
+});
+
+app.post('/api/data', (req, res) => {
+    const { data } = req.body;
+    res.json({ received: data, timestamp: new Date().toISOString() });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(\`🚀 Server running on port \${PORT}\`);
+});`,
+                language: 'javascript',
+                type: 'server'
+            },
+            'package.json': {
+                name: 'package.json',
+                content: `{
+  "name": "rahl-project",
+  "version": "1.0.0",
+  "description": "Full-stack project generated by Rahl AI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}`,
+                language: 'json'
+            },
+            'README.md': {
+                name: 'README.md',
+                content: `# Rahl AI Project
+
+This project was generated by **Rahl AI**, a full-stack coding assistant.
+
+## Features
+- Full-stack architecture
+- Real-time code generation
+- GitHub integration
+- Live preview
+- Multi-language support
+
+## Getting Started
+1. Install dependencies: \`npm install\`
+2. Start server: \`npm start\`
+3. Open browser: http://localhost:3000
+
+## Project Structure
+- \`index.html\` - Frontend entry point
+- \`server.js\` - Backend server
+- \`package.json\` - Dependencies
+
+## Built with ❤️ by Rahl AI`,
+                language: 'markdown'
+            }
+        };
+        
         // ========== DOM ELEMENTS ==========
         const mainContainer = document.getElementById('mainContainer');
         const messagesDiv = document.getElementById('messages');
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
-        const codeEditor = document.getElementById('codeEditor');
+        const projectTitle = document.getElementById('projectTitle');
+        const projectDesc = document.getElementById('projectDesc');
+        const fileTree = document.getElementById('fileTree');
+        const editorTabs = document.getElementById('editorTabs');
+        const languageSelect = document.getElementById('languageSelect');
         const previewFrame = document.getElementById('previewFrame');
-
-        // ========== INTENT DETECTION ==========
-        function detectCodingIntent(text) {
-            const triggers = [
-                'create',
-                'build',
-                'make',
-                'code',
-                'develop',
-                'generate',
-                'write code',
-                'i want a',
-                'i need a',
-                'design a'
-            ];
-            const lower = text.toLowerCase();
-            return triggers.some(trigger => lower.includes(trigger));
-        }
-
-        // ========== MODE MANAGEMENT ==========
-        function enterCodingMode() {
-            isCodingMode = true;
-            mainContainer.classList.add('coding-mode');
-            codeEditor.value = currentCode;
-            updatePreview();
-            addMessage('system', 'Entered coding mode. You can describe changes and see live preview.');
-        }
-
-        function exitCodingMode() {
-            isCodingMode = false;
-            mainContainer.classList.remove('coding-mode');
-            addMessage('system', 'Returned to chat mode.');
-        }
-
-        // ========== MESSAGE HANDLING ==========
-        function addMessage(sender, text) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${sender}`;
-            msgDiv.innerHTML = `<strong>${sender.toUpperCase()}:</strong> ${text}`;
-            messagesDiv.appendChild(msgDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function handleAIResponse(userMessage) {
-            const lowerMsg = userMessage.toLowerCase();
+        const githubConnect = document.getElementById('githubConnect');
+        const githubCommit = document.getElementById('githubCommit');
+        const githubPush = document.getElementById('githubPush');
+        
+        // ========== INITIALIZATION ==========
+        function init() {
+            // Initialize Monaco Editor
+            require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.34.0/min/vs' } });
             
-            // Check if should enter coding mode
-            if (!isCodingMode && detectCodingIntent(userMessage)) {
-                enterCodingMode();
-                return "I'll help you build that! Describe what you want (e.g., 'add a blue button').";
+            require(['vs/editor/editor.main'], function() {
+                editor = monaco.editor.create(document.getElementById('monacoEditor'), {
+                    value: '',
+                    language: 'html',
+                    theme: 'vs-dark',
+                    fontSize: 14,
+                    minimap: { enabled: true },
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true
+                });
+                
+                editor.onDidChangeModelContent(updateCurrentFileContent);
+            });
+            
+            // Auto-resize textarea
+            userInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+            
+            // Initialize files
+            currentProject.files = { ...initialFiles };
+            updateFileTree();
+            openFile('index.html');
+            
+            // Event listeners
+            sendBtn.addEventListener('click', handleUserInput);
+            userInput.addEventListener('keydown', handleInputKeydown);
+            languageSelect.addEventListener('change', updateEditorLanguage);
+            githubConnect.addEventListener('click', connectGitHub);
+            githubCommit.addEventListener('click', commitToGitHub);
+            githubPush.addEventListener('click', pushToGitHub);
+        }
+        
+        // ========== CHAT FUNCTIONS ==========
+        function handleInputKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleUserInput();
             }
-            
-            // If in coding mode, update code based on request
-            if (isCodingMode) {
-                let updated = false;
-                
-                if (lowerMsg.includes('button')) {
-                    currentCode = currentCode.replace('</body>', 
-                        '\n<button style="padding:10px 20px;background:blue;color:white;border:none;border-radius:5px;">Click Me</button>\n</body>');
-                    updated = true;
-                }
-                
-                if (lowerMsg.includes('blue') && !lowerMsg.includes('button')) {
-                    currentCode = currentCode.replace('background: #f5f5f5;', 'background: lightblue;');
-                    updated = true;
-                }
-                
-                if (lowerMsg.includes('red')) {
-                    currentCode = currentCode.replace('color: #333;', 'color: red;');
-                    updated = true;
-                }
-                
-                if (lowerMsg.includes('center')) {
-                    currentCode = currentCode.replace('padding: 40px;', 'padding: 40px; text-align: center;');
-                    updated = true;
-                }
-                
-                if (updated) {
-                    codeEditor.value = currentCode;
-                    updatePreview();
-                    return "Updated the code based on your request!";
-                }
-                
-                return "I'm in coding mode. Describe changes or say 'exit coding' to return to chat.";
-            }
-            
-            // Normal chat responses
-            const responses = [
-                "How can I help you today?",
-                "Want to build something? Try saying 'create a website'.",
-                "I can help you code projects. Just ask!",
-                "Try describing what you want to build."
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
         }
-
-        function handleUserInput() {
+        
+        async function handleUserInput() {
             const text = userInput.value.trim();
             if (!text) return;
             
             // Add user message
             addMessage('user', text);
-            
-            // Clear input
             userInput.value = '';
+            userInput.style.height = 'auto';
+            userInput.disabled = true;
+            sendBtn.disabled = true;
             
-            // Check for exit command
-            if (isCodingMode && (text.toLowerCase().includes('exit coding') || 
-                                 text.toLowerCase().includes('back to chat'))) {
-                exitCodingMode();
+            // Show typing indicator
+            showTypingIndicator();
+            
+            try {
+                // Check for coding intent
+                if (!isCodingMode && detectCodingIntent(text)) {
+                    isCodingMode = true;
+                    mainContainer.classList.add('coding-mode');
+                    
+                    currentProject.name = text.substring(0, 50);
+                    currentProject.description = text;
+                    
+                    projectTitle.textContent = currentProject.name;
+                    projectDesc.textContent = currentProject.description;
+                    
+                    addMessage('system', `Entered coding mode. Building: "${text}"`);
+                    
+                    // Generate initial project structure
+                    await generateProjectStructure(text);
+                }
+                
+                // Process with AI
+                const response = await processWithRahlAI(text);
+                
+                hideTypingIndicator();
+                addMessage('ai', response.message);
+                
+                // Update code if AI generated new files
+                if (response.files) {
+                    updateProjectFiles(response.files);
+                }
+                
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage('system', `Error: ${error.message}`);
+                console.error(error);
+            } finally {
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        }
+        
+        function detectCodingIntent(text) {
+            const triggers = [
+                'create', 'build', 'make', 'code', 'develop', 
+                'generate', 'write', 'project', 'app', 'application',
+                'website', 'backend', 'frontend', 'full-stack', 'api'
+            ];
+            const lower = text.toLowerCase();
+            return triggers.some(trigger => lower.includes(trigger));
+        }
+        
+        // ========== RAHL AI INTEGRATION ==========
+        async function processWithRahlAI(prompt) {
+            // Simulated AI response - Replace with actual API call
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const responses = {
+                        // Frontend requests
+                        'react': {
+                            message: "I'll create a React application with modern best practices.",
+                            files: {
+                                'App.jsx': `import React, { useState } from 'react';
+import './App.css';
+
+function App() {
+    const [count, setCount] = useState(0);
+    
+    return (
+        <div className="App">
+            <h1>React App by Rahl AI</h1>
+            <button onClick={() => setCount(count + 1)}>
+                Count: {count}
+            </button>
+        </div>
+    );
+}
+
+export default App;`,
+                                'App.css': `.App {
+    text-align: center;
+    padding: 2rem;
+    font-family: sans-serif;
+}
+
+button {
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}`
+                            }
+                        },
+                        // Backend requests
+                        'api': {
+                            message: "Creating a REST API with Express.js and MongoDB integration.",
+                            files: {
+                                'models/User.js': `const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
+    createdAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('User', userSchema);`,
+                                'routes/auth.js': `const express = require('express');
+const router = express.Router();
+const User = require('../models/User');
+
+router.post('/register', async (req, res) => {
+    try {
+        const user = new User(req.body);
+        await user.save();
+        res.status(201).json({ message: 'User created successfully' });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+module.exports = router;`
+                            }
+                        },
+                        // Database requests
+                        'database': {
+                            message: "Setting up PostgreSQL database with migration scripts.",
+                            files: {
+                                'db/schema.sql': `CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`,
+                                'db/migrate.js': `const { Pool } = require('pg');
+const pool = new Pool();
+
+async function migrate() {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        // Run schema migrations
+        await client.query(\`CREATE TABLE IF NOT EXISTS users (...)\`);
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
+module.exports = { migrate };`
+                            }
+                        },
+                        // Default response
+                        'default': {
+                            message: "I'll help you build that! I've updated the project structure with the necessary files. You can now ask me to add specific features or modify existing code.",
+                            files: {}
+                        }
+                    };
+                    
+                    // Determine which response to use based on prompt
+                    const lowerPrompt = prompt.toLowerCase();
+                    let responseKey = 'default';
+                    
+                    if (lowerPrompt.includes('react') || lowerPrompt.includes('frontend')) {
+                        responseKey = 'react';
+                    } else if (lowerPrompt.includes('api') || lowerPrompt.includes('backend')) {
+                        responseKey = 'api';
+                    } else if (lowerPrompt.includes('database') || lowerPrompt.includes('postgres') || lowerPrompt.includes('sql')) {
+                        responseKey = 'database';
+                    }
+                    
+                    resolve(responses[responseKey]);
+                }, 1000);
+            });
+        }
+        
+        async function generateProjectStructure(description) {
+            // Generate comprehensive project structure based on description
+            const projectStructure = {
+                'frontend': ['index.html', 'styles.css', 'app.js', 'components/', 'assets/'],
+                'backend': ['server.js', 'package.json', 'routes/', 'controllers/', 'models/', 'config/'],
+                'database': ['db/', 'migrations/', 'seeds/'],
+                'devops': ['Dockerfile', 'docker-compose.yml', '.github/workflows/', 'nginx.conf']
+            };
+            
+            // Add relevant files based on description
+            const lowerDesc = description.toLowerCase();
+            
+            if (lowerDesc.includes('full-stack') || lowerDesc.includes('backend')) {
+                currentProject.files['server.js'] = initialFiles['server.js'];
+                currentProject.files['package.json'] = initialFiles['package.json'];
+            }
+            
+            if (lowerDesc.includes('database') || lowerDesc.includes('postgres') || lowerDesc.includes('mongodb')) {
+                currentProject.files['db.js'] = {
+                    name: 'db.js',
+                    content: `// Database connection setup
+const { Pool } = require('pg');
+require('dotenv').config();
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+module.exports = {
+    query: (text, params) => pool.query(text, params),
+    end: () => pool.end()
+};`,
+                    language: 'javascript'
+                };
+            }
+            
+            updateFileTree();
+        }
+        
+        // ========== FILE MANAGEMENT ==========
+        function updateFileTree() {
+            fileTree.innerHTML = '';
+            
+            Object.values(currentProject.files).forEach(file => {
+                const li = document.createElement('li');
+                li.className = `file-item ${file.type || ''}`;
+                li.textContent = file.name;
+                li.dataset.file = file.name;
+                
+                li.addEventListener('click', () => openFile(file.name));
+                
+                fileTree.appendChild(li);
+            });
+        }
+        
+        function openFile(filename) {
+            const file = currentProject.files[filename];
+            if (!file) return;
+            
+            // Update active file
+            currentProject.activeFile = filename;
+            
+            // Update file tree selection
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-file="${filename}"]`)?.classList.add('active');
+            
+            // Update editor
+            if (editor) {
+                const model = monaco.editor.createModel(
+                    file.content,
+                    file.language || 'plaintext'
+                );
+                editor.setModel(model);
+            }
+            
+            // Update language selector
+            languageSelect.value = file.language || 'html';
+            
+            // Update tabs
+            updateEditorTabs();
+            
+            // Update preview for HTML files
+            if (filename.endsWith('.html')) {
+                updatePreview(file.content);
+            }
+        }
+        
+        function updateEditorTabs() {
+            editorTabs.innerHTML = '';
+            
+            Object.keys(currentProject.files).forEach(filename => {
+                const button = document.createElement('button');
+                button.className = `editor-tab ${filename === currentProject.activeFile ? 'active' : ''}`;
+                button.textContent = filename;
+                button.addEventListener('click', () => openFile(filename));
+                
+                // Add close button
+                const closeBtn = document.createElement('span');
+                closeBtn.textContent = ' ×';
+                closeBtn.style.marginLeft = '8px';
+                closeBtn.style.cursor = 'pointer';
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeFile(filename);
+                });
+                
+                button.appendChild(closeBtn);
+                editorTabs.appendChild(button);
+            });
+        }
+        
+        function updateCurrentFileContent() {
+            if (!editor || !currentProject.activeFile) return;
+            
+            const content = editor.getValue();
+            const file = currentProject.files[currentProject.activeFile];
+            
+            if (file) {
+                file.content = content;
+                
+                // Update preview for HTML files
+                if (currentProject.activeFile.endsWith('.html')) {
+                    updatePreview(content);
+                }
+            }
+        }
+        
+        function updateProjectFiles(newFiles) {
+            Object.entries(newFiles).forEach(([filename, content]) => {
+                // Determine language from extension
+                const extension = filename.split('.').pop();
+                const languages = {
+                    'js': 'javascript', 'jsx': 'javascript', 'ts': 'typescript', 'tsx': 'typescript',
+                    'py': 'python', 'java': 'java', 'cpp': 'cpp', 'c': 'c', 'cs': 'csharp',
+                    'go': 'go', 'rs': 'rust', 'php': 'php', 'rb': 'ruby', 'html': 'html',
+                    'css': 'css', 'scss': 'scss', 'json': 'json', 'sql': 'sql',
+                    'md': 'markdown', 'dockerfile': 'dockerfile', 'yml': 'yaml', 'yaml': 'yaml'
+                };
+                
+                currentProject.files[filename] = {
+                    name: filename,
+                    content: content,
+                    language: languages[extension] || 'plaintext'
+                };
+            });
+            
+            updateFileTree();
+            updateEditorTabs();
+        }
+        
+        function closeFile(filename) {
+            if (Object.keys(currentProject.files).length <= 1) {
+                alert('Cannot close the last file');
                 return;
             }
             
-            // Simulate AI thinking
-            setTimeout(() => {
-                const response = handleAIResponse(text);
-                addMessage('ai', response);
-            }, 300);
+            delete currentProject.files[filename];
+            
+            if (currentProject.activeFile === filename) {
+                const firstFile = Object.keys(currentProject.files)[0];
+                openFile(firstFile);
+            }
+            
+            updateFileTree();
+            updateEditorTabs();
         }
-
-        // ========== PREVIEW ==========
-        function updatePreview() {
-            previewFrame.srcdoc = currentCode;
+        
+        function updateEditorLanguage() {
+            if (!editor || !currentProject.activeFile) return;
+            
+            const language = languageSelect.value;
+            const file = currentProject.files[currentProject.activeFile];
+            
+            if (file) {
+                file.language = language;
+                monaco.editor.setModelLanguage(editor.getModel(), language);
+            }
         }
-
-        // ========== EVENT LISTENERS ==========
-        sendBtn.addEventListener('click', handleUserInput);
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleUserInput();
-        });
-
-        // Live code editing
-        codeEditor.addEventListener('input', (e) => {
-            currentCode = e.target.value;
-            updatePreview();
-        });
-
-        // Initial preview
-        updatePreview();
+        
+        // ========== PREVIEW FUNCTIONS ==========
+        function updatePreview(content) {
+            previewFrame.srcdoc = content;
+        }
+        
+        function refreshPreview() {
+            if (currentProject.activeFile && currentProject.activeFile.endsWith('.html')) {
+                const file = currentProject.files[currentProject.activeFile];
+                updatePreview(file.content);
+            }
+        }
+        
+        function openPreview() {
+            const blob = new Blob([currentProject.files['index.html']?.content || ''], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        }
+        
+        // ========== GITHUB INTEGRATION ==========
+        function connectGitHub() {
+            // Redirect to GitHub OAuth
+            const githubOAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo`;
+            window.open(githubOAuthURL, '_blank');
+            
+            // In a real implementation, you would handle the OAuth callback
+            // and store the access token
+            
+            currentProject.githubConnected = true;
+            githubConnect.textContent = '✓ GitHub Connected';
+            githubConnect.disabled = true;
+            githubCommit.disabled = false;
+            githubPush.disabled = false;
+            
+            addMessage('system', 'GitHub connected successfully. You can now commit and push your project.');
+        }
+        
+        async function commitToGitHub() {
+            if (!currentProject.githubConnected) {
+                alert('Please connect GitHub first');
+                return;
+            }
+            
+            const commitMessage = prompt('Enter commit message:', 'Initial commit from Rahl AI');
+            if (!commitMessage) return;
+            
+            // Prepare files for commit
+            const files = Object.entries(currentProject.files).map(([name, file]) => ({
+                path: name,
+                content: file.content
+            }));
+            
+            // In a real implementation, you would:
+            // 1. Create a Git repository
+            // 2. Add files
+            // 3. Commit with message
+            // 4. Push to GitHub
+            
+            addMessage('system', `Committed ${files.length} files with message: "${commitMessage}"`);
+            alert(`Successfully committed ${files.length} files to GitHub!`);
+        }
+        
+        async function pushToGitHub() {
+            if (!currentProject.githubConnected) {
+                alert('Please connect GitHub first');
+                return;
+            }
+            
+            const repoName = prompt('Enter GitHub repository name:', `rahl-project-${Date.now()}`);
+            if (!repoName) return;
+            
+            // In a real implementation, you would:
+            // 1. Create repository on GitHub
+            // 2. Push all files
+            // 3. Return repository URL
+            
+            const repoUrl = `https://github.com/yourusername/${repoName}`;
+            
+            addMessage('system', `Pushed project to GitHub: ${repoUrl}`);
+            alert(`Project pushed successfully! Repository URL: ${repoUrl}`);
+            
+            window.open(repoUrl, '_blank');
+        }
+        
+        // ========== UI FUNCTIONS ==========
+        function addMessage(sender, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            
+            const senderName = sender === 'ai' ? 'RAHL AI' : sender.toUpperCase();
+            msgDiv.innerHTML = `<strong>${senderName}</strong> ${text}`;
+            
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <strong>RAHL AI</strong>
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            messagesDiv.appendChild(typingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function hideTypingIndicator() {
+            const typingDiv = document.getElementById('typingIndicator');
+            if (typingDiv) {
+                typingDiv.remove();
+            }
+        }
+        
+        // ========== BACKEND EXECUTION ==========
+        async function executeBackendCode(code, language) {
+            try {
+                const response = await fetch(BACKEND_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, language })
+                });
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+        
+        // ========== START APPLICATION ==========
+        window.addEventListener('DOMContentLoaded', init);
+        
+        // Add some example commands
+        setTimeout(() => {
+            addMessage('ai', `Try commands like:
+• "Create a React dashboard with charts"
+• "Build a Node.js API with authentication"
+• "Make a full-stack e-commerce site"
+• "Generate a Python machine learning model"
+• "Create a mobile app with React Native"`);
+        }, 2000);
     </script>
 </body>
-</html>
+    </html>
