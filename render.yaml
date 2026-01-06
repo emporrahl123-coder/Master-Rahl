@@ -1,0 +1,32 @@
+services:
+  # Rahl AI Backend Service
+  - type: web
+    name: rahl-ai
+    env: node
+    region: oregon  # or us-east, us-west, etc.
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: rahl-data
+      mountPath: /data
+      sizeGB: 1
+
+  # Static Frontend (Optional - can also be served from backend)
+  - type: static
+    name: rahl-ai-frontend
+    buildCommand: cp -r frontend/* public/
+    publishPath: ./public
+    envVars:
+      - key: BACKEND_URL
+        value: https://rahl-ai.onrender.com
